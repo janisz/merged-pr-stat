@@ -2,6 +2,7 @@ import { program } from "commander";
 import { parseISO, add, addDays, format, min } from "date-fns";
 import { execFileSync } from "child_process";
 import csvStringify from "csv-stringify/lib/sync";
+import { PullRequest } from "../src/entity";
 
 async function main(): Promise<void> {
   program.requiredOption("--start <date>").requiredOption("--end <date>").requiredOption("--query <query>");
@@ -13,7 +14,6 @@ async function main(): Promise<void> {
   const query = program.query as string;
 
   const intervalDays = 7;
-  const allLogs = [];
   process.stdout.write(
     "title,author,url,createdAt,mergedAt,additions,deletions,authoredDate,leadTimeSeconds,timeToMergeSeconds\n"
   );
@@ -27,19 +27,36 @@ async function main(): Promise<void> {
       ["log", "--start", start.toISOString(), "--end", end.toISOString(), "--query", query],
       { encoding: "utf8" }
     );
-    const logs: any[] = JSON.parse(stdout);
+    const logs: PullRequest[] = JSON.parse(stdout);
     process.stdout.write(
       csvStringify(
         logs.map((l) => [
-          l.title,
-          l.author,
-          l.url,
-          l.createdAt,
-          l.mergedAt,
+          l.id,
           l.additions,
+          l.assignees,
+          l.changedFiles,
+          l.comments,
+          l.commits,
           l.deletions,
-          l.authoredDate,
-          l.leadTimeSeconds,
+          l.labels,
+          l.participants,
+          l.reactions,
+          l.retests,
+          l.reviewRequests,
+          l.reviews,
+          l.reviewThreads,
+          l.autoMergeEnabledAt,
+          l.createdAt,
+          l.firstReviewedAt,
+          l.lastEditedAt,
+          l.mergedAt,
+          l.publishedAt,
+          l.updatedAt,
+          l.isCrossRepository,
+          l.timeToMergeSeconds,
+          l.timeToFirstReviewSeconds,
+          l.timeToMergeSeconds,
+          l.timeToMergeFromFirstReviewSeconds,
           l.timeToMergeSeconds,
         ])
       )

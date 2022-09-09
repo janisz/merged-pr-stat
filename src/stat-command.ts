@@ -1,6 +1,5 @@
 import fs from "fs";
 import { PullRequest } from "./entity";
-import { uniq } from "underscore";
 import { median as _median } from "mathjs";
 import { fetchAllMergedPullRequests } from "./github";
 
@@ -27,20 +26,16 @@ export async function statCommand(options: StatCommandOptions): Promise<void> {
 
 interface PullRequestStat {
   count: number;
-  authorCount: number;
   additionsAverage: number;
   additionsMedian: number;
   deletionsAverage: number;
   deletionsMedian: number;
-  leadTimeSecondsAverage: number;
-  leadTimeSecondsMedian: number;
   timeToMergeSecondsAverage: number;
   timeToMergeSecondsMedian: number;
   timeToMergeFromFirstReviewSecondsAverage: number;
   timeToMergeFromFirstReviewSecondsMedian: number;
 }
 export function createStat(prs: PullRequest[]): PullRequestStat {
-  const leadTimes = prs.map((pr) => pr.leadTimeSeconds);
   const timeToMerges = prs.map((pr) => pr.timeToMergeSeconds);
   const timeToMergeFromFirstReviews = prs
     .map((pr) => pr.timeToMergeFromFirstReviewSeconds)
@@ -48,13 +43,10 @@ export function createStat(prs: PullRequest[]): PullRequestStat {
 
   return {
     count: prs.length,
-    authorCount: uniq(prs.map((pr) => pr.author)).length,
     additionsAverage: average(prs.map((pr) => pr.additions)),
     additionsMedian: median(prs.map((pr) => pr.additions)),
     deletionsAverage: average(prs.map((pr) => pr.deletions)),
     deletionsMedian: median(prs.map((pr) => pr.deletions)),
-    leadTimeSecondsAverage: Math.floor(average(leadTimes)),
-    leadTimeSecondsMedian: Math.floor(median(leadTimes)),
     timeToMergeSecondsAverage: Math.floor(average(timeToMerges)),
     timeToMergeSecondsMedian: Math.floor(median(timeToMerges)),
     timeToMergeFromFirstReviewSecondsAverage: Math.floor(average(timeToMergeFromFirstReviews)),
@@ -72,21 +64,38 @@ function median(numbers: number[]): number {
   return _median(numbers);
 }
 
+interface comment {
+  bodyText: string;
+}
+
 export function createPullRequestsByLog(path: string): PullRequest[] {
   const logs = JSON.parse(fs.readFileSync(path, "utf8"));
   return logs.map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (p: any) =>
       new PullRequest(
-        p.title,
-        p.author,
-        p.url,
-        p.createdAt,
-        p.mergedAt,
+        p.number,
         p.additions,
+        p.assignees.totalCount,
+        p.changedFiles,
+        p.comments.totalCount,
+        p.commits.totalCount,
         p.deletions,
-        p.authoredDate,
-        p.firstReviewedAt
+        p.labels.totalCount,
+        p.participants.totalCount,
+        p.reactions.totalCount,
+        p.comments.nodes.filter((n: comment) => n.bodyText.startsWith("/retest")).length,
+        p.reviewRequests.totalCount,
+        p.reviews.totalCount,
+        p.reviewThreads.totalCount,
+        p.autoMergeRequest.enabledAt,
+        p.createdAt,
+        p.reviews.nodes[0] ? p.reviews.nodes[0].createdAt : undefined,
+        p.lastEditedAt,
+        p.mergedAt,
+        p.publishedAt,
+        p.updatedAt,
+        p.isCrossRepository
       )
   );
 }

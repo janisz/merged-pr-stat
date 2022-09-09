@@ -31,23 +31,48 @@ export async function fetchAllMergedPullRequests(
 }
 
 interface PullRequestNode {
-  title: string;
-  author: {
-    login: string;
-  } | null;
-  url: string;
+  number: number;
+  isCrossRepository: boolean;
   createdAt: string;
   mergedAt: string;
-  additions: number;
-  deletions: number;
+  updatedAt: string;
+  lastEditedAt: string;
+  reviewThreads: {
+    totalCount: number;
+  };
+  changedFiles: number;
+  assignees: {
+    totalCount: number;
+  };
+  labels: {
+    totalCount: number;
+  };
+  autoMergeRequest: {
+    enabledAt: string;
+  } | null;
+  reactions: {
+    totalCount: number;
+  };
+  publishedAt: string;
+  participants: {
+    totalCount: number;
+  };
   commits: {
+    totalCount: number;
+  };
+  comments: {
+    totalCount: number;
     nodes: {
-      commit: {
-        authoredDate: string;
-      };
+      bodyText: string;
     }[];
   };
+  reviewRequests: {
+    totalCount: number;
+  };
+  additions: number;
+  deletions: number;
   reviews: {
+    totalCount: number;
     nodes: {
       createdAt: string;
     }[];
@@ -61,25 +86,48 @@ async function fetchAllPullRequestsByQuery(searchQuery: string): Promise<PullReq
         issueCount
         nodes {
           ... on PullRequest {
-            title
-            author {
-              login
+            number
+            isCrossRepository
+            updatedAt
+            lastEditedAt
+            reviewThreads {
+              totalCount
             }
-            url
+            changedFiles
+            assignees {
+              totalCount
+            }
+            labels {
+              totalCount
+            }
+            autoMergeRequest {
+              enabledAt
+            }
+            reactions {
+              totalCount
+            }
+            publishedAt
+            participants {
+              totalCount
+            }
             createdAt
             mergedAt
             additions
             deletions
-            # for lead time
-            commits(first:1) {
+            commits {
+              totalCount
+            }
+            comments(first: 100) {
+              totalCount
               nodes {
-                commit {
-                  authoredDate
-                }
+                bodyText
               }
             }
-            # for time to merge from review
-            reviews(first:1) {
+            reviewRequests {
+              totalCount
+            }
+            reviews(first: 1) {
+              totalCount
               nodes {
                 ... on PullRequestReview {
                   createdAt
@@ -111,15 +159,28 @@ async function fetchAllPullRequestsByQuery(searchQuery: string): Promise<PullReq
       data.search.nodes.map(
         (p: PullRequestNode) =>
           new PullRequest(
-            p.title,
-            p.author ? p.author.login : undefined,
-            p.url,
-            p.createdAt,
-            p.mergedAt,
+            p.number,
             p.additions,
+            p.assignees.totalCount,
+            p.changedFiles,
+            p.comments.totalCount,
+            p.commits.totalCount,
             p.deletions,
-            p.commits.nodes[0].commit.authoredDate,
-            p.reviews.nodes[0] ? p.reviews.nodes[0].createdAt : undefined
+            p.labels.totalCount,
+            p.participants.totalCount,
+            p.reactions.totalCount,
+            p.comments.nodes.filter((n) => n.bodyText.startsWith("/retest")).length,
+            p.reviewRequests.totalCount,
+            p.reviews.totalCount,
+            p.reviewThreads.totalCount,
+            p.autoMergeRequest? p.autoMergeRequest.enabledAt : undefined,
+            p.createdAt,
+            p.reviews.nodes[0] ? p.reviews.nodes[0].createdAt : undefined,
+            p.lastEditedAt,
+            p.mergedAt,
+            p.publishedAt,
+            p.updatedAt,
+            p.isCrossRepository
           )
       )
     );

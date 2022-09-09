@@ -57,7 +57,7 @@
     "url": "https://github.com/shibayu36/merged-pr-stat.git"
   },
   "scripts": {
-    "build": "webpack --silent",
+    "build": "webpack",
     "exec": "npm run --silent build && node dist/index.js",
     "lint": "eslint . --ext 'ts,js'",
     "lint:fix": "eslint . --fix --ext 'ts,js'",
