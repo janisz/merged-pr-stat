@@ -1,6 +1,7 @@
 import { GraphQLClient, gql } from "graphql-request";
 import { PullRequest } from "./entity";
 import { parseISO } from "date-fns";
+import { time } from "console";
 
 // GitHub.com https://api.github.com/graphql
 // GitHub Enterprise https://<HOST>/api/graphql
@@ -154,43 +155,52 @@ async function fetchAllPullRequestsByQuery(searchQuery: string): Promise<PullReq
   let prs: PullRequest[] = [];
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const data = await graphQLClient.request(query, { after });
-    prs = prs.concat(
-      data.search.nodes.map(
-        (p: PullRequestNode) =>
-          new PullRequest(
-            p.number,
-            p.additions,
-            p.assignees.totalCount,
-            p.changedFiles,
-            p.comments.totalCount,
-            p.commits.totalCount,
-            p.deletions,
-            p.labels.totalCount,
-            p.participants.totalCount,
-            p.reactions.totalCount,
-            p.comments.nodes.filter((n) => n.bodyText.startsWith("/retest")).length,
-            p.reviewRequests.totalCount,
-            p.reviews.totalCount,
-            p.reviewThreads.totalCount,
-            p.autoMergeRequest? p.autoMergeRequest.enabledAt : undefined,
-            p.createdAt,
-            p.reviews.nodes[0] ? p.reviews.nodes[0].createdAt : undefined,
-            p.lastEditedAt,
-            p.mergedAt,
-            p.publishedAt,
-            p.updatedAt,
-            p.isCrossRepository
-          )
-      )
-    );
-
-    if (!data.search.pageInfo.hasNextPage) break;
-
-    // console.error(JSON.stringify(data, undefined, 2));
-
-    after = data.search.pageInfo.endCursor;
+    try {
+      const data = await graphQLClient.request(query, { after });
+      prs = prs.concat(
+        data.search.nodes.map(
+          (p: PullRequestNode) =>
+            new PullRequest(
+              p.number,
+              p.additions,
+              p.assignees.totalCount,
+              p.changedFiles,
+              p.comments.totalCount,
+              p.commits.totalCount,
+              p.deletions,
+              p.labels.totalCount,
+              p.participants.totalCount,
+              p.reactions.totalCount,
+              p.comments.nodes.filter((n) => n.bodyText.startsWith("/retest")).length,
+              p.reviewRequests.totalCount,
+              p.reviews.totalCount,
+              p.reviewThreads.totalCount,
+              p.autoMergeRequest? p.autoMergeRequest.enabledAt : undefined,
+              p.createdAt,
+              p.reviews.nodes[0] ? p.reviews.nodes[0].createdAt : undefined,
+              p.lastEditedAt,
+              p.mergedAt,
+              p.publishedAt,
+              p.updatedAt,
+              p.isCrossRepository
+            )
+        )
+      );
+      console.error(data.rateLimit)
+      console.error(data.search.issueCount, prs[0].createdAt)
+      // var delay = new Date().getTime() - new Date(data.rateLimit.resetAt).getTime()
+      // if (delay > 0) {
+      //   console.error("Sleep")
+      //   await new Promise(resolve => setTimeout(()=>resolve(), delay)).then(()=>console.error("fired"));
+      // }
+      if (!data.search.pageInfo.hasNextPage) break;
+      after = data.search.pageInfo.endCursor;
+    } catch (error) {
+      console.error(error)
+      continue
+    }
   }
 
   return prs;
 }
+
